@@ -591,12 +591,18 @@ Partial Class MainForm
 		Dim buscar,url,nombre As String
 		Dim url_yahoo As String = "https://es.finance.yahoo.com/lookup?s=%valor"
 		' TODO : Programar la busqueda de valores para que saque la descriptción o el valor
-		' TODO : buscar en el fichero de sp500 antes de lanzar la busqueda en internet
+		' DONE : buscar en el fichero de sp500 antes de lanzar la busqueda en internet
 		
-		buscar = url_yahoo.Replace("%valor", RTrim(txt_find.Text))
+		' primero miramos en el fichero de valores del sp500
 		
-		url = leerHtml(buscar)
+		nombre = buscartrade(RTrim(txt_find.Text))
 		
+		If (nombre="-1") Then
+		
+		  buscar = url_yahoo.Replace("%valor", RTrim(txt_find.Text))
+	
+		  url = leerHtml(buscar)
+		  
 		pos_i = url.LastIndexOf("data-reactid=""58""")
 		If (pos_i = -1 ) Then
 			MsgBox(RTrim(txt_find.Text)+" Not found",MsgBoxStyle.OkOnly,"Download stock the Alpha Vantage")
@@ -608,6 +614,12 @@ Partial Class MainForm
 			txt_stock.Text = nombre
 			tul_text.Text= nombre
 		End If
+		Else
+			txt_stock.Text = nombre
+			tul_text.Text= nombre
+			
+		End If 
+		
 	End Sub
 	
 

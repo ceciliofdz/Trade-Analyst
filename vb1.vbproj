@@ -64,6 +64,7 @@
       <DependentUpon>MainForm.vb</DependentUpon>
     </Compile>
     <Compile Include="MainForm.vb" />
+    <Compile Include="tradef.vb" />
     <Compile Include="Program.vb" />
     <Compile Include="Properties\AssemblyInfo.vb" />
   </ItemGroup>
