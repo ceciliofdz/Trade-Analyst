@@ -1,4 +1,5 @@
 ﻿Imports System.IO
+Imports System.String
 '
 ' Creado por SharpDevelop.
 ' Usuario: Cecilio
@@ -196,7 +197,7 @@ Partial Class MainForm
 		Me.combo_market.Name = "combo_market"
 		Me.combo_market.Size = New System.Drawing.Size(102, 21)
 		Me.combo_market.TabIndex = 12
-		AddHandler Me.combo_market.SelectedIndexChanged, AddressOf Me.Combo_marketSelectedIndexChanged
+		AddHandler Me.combo_market.SelectionChangeCommitted, AddressOf Me.Combo_marketSelectionChangeCommitted
 		AddHandler Me.combo_market.KeyPress, AddressOf Me.Combo_marketKeyPress
 		'
 		'label4
@@ -418,8 +419,8 @@ Partial Class MainForm
 		txt_find.Select()
 		rad_100.Checked = True
 		rad_total.Checked = False
-		rad_yes.Checked = True
-		rad_no.Checked = False
+		rad_yes.Checked = False
+		rad_no.Checked = True
 		rad_daily.Checked = True
 		rad_weekly.Checked = False
 		rad_monthly.Checked = False
@@ -445,10 +446,15 @@ Partial Class MainForm
 	
 	Sub cargarcombo(combo As System.Windows.Forms.ComboBox, fichero As String) 
 		Dim f As IO.StreamReader
+		Dim reg As String()
 
         f = IO.File.OpenText(fichero)
         Do Until f.EndOfStream
-        	combo.Items.Add(f.ReadLine()) 
+        	
+        	reg = f.ReadLine().Split(New Char() {";"c})
+        	If (reg(0)<>"Ticker") Then
+        		combo.Items.Add(reg(0))
+        	End If
         Loop
         f.Close()
         combo.Text=combo.Items(0).ToString
@@ -464,7 +470,7 @@ Partial Class MainForm
         Return New StreamReader(Rsp.GetResponseStream()).ReadToEnd()
 	End Function 
 	
-	Function api() As String
+	Public Function api(val As String) As String
 		
 		Dim qapi, nprod,val_csv As String
 		Dim funcion,total,ajuste As String
@@ -508,7 +514,7 @@ Partial Class MainForm
   		
   		qapi = System.String.Concat("https://www.alphavantage.co/query?function=",funcion,"&symbol=%valor",total,"&apikey=8FQFHRYJK498897C&datatype=csv")
   		
-  		nprod = qapi.Replace("%valor", combo_stock.SelectedItem.ToString)
+  		nprod = qapi.Replace("%valor", val)
   		
   		val_csv = leerHtml(nprod)
   		
@@ -532,12 +538,13 @@ Partial Class MainForm
   		Return val_csv
 	End Function
 	
-	Sub Combo_marketSelectedIndexChanged(sender As Object, e As EventArgs)
+	Sub Combo_marketSelectionChangeCommitted(sender As Object, e As EventArgs)
 		combo_stock.Items.Clear
 		cargarcombo(combo_stock,System.String.Concat("data\" , combo_market.SelectedItem.ToString, ".csv"))
 		txt_find.Text=combo_stock.SelectedItem.ToString
 		
 	End Sub
+	
 	
 	
 	Sub Combo_marketKeyPress(sender As Object, e As KeyPressEventArgs)
@@ -548,7 +555,7 @@ Partial Class MainForm
 		Dim texto_url As String
 		
 		txt_stock.Clear
-		texto_url=api()
+		texto_url=api(combo_stock.SelectedItem.ToString)
 		
 		If  texto_url <> "-1" Then
 			txt_stock.Text = texto_url
@@ -576,8 +583,8 @@ Partial Class MainForm
 		txt_find.Select()
 		rad_100.Checked = True
 		rad_total.Checked = False
-		rad_yes.Checked = True
-		rad_no.Checked = False
+		rad_yes.Checked = False
+		rad_no.Checked = True
 		rad_daily.Checked = True
 		rad_weekly.Checked = False
 		rad_monthly.Checked = False
@@ -593,9 +600,9 @@ Partial Class MainForm
 		' TODO : Programar la busqueda de valores para que saque la descriptción o el valor
 		' DONE : buscar en el fichero de sp500 antes de lanzar la busqueda en internet
 		
-		' primero miramos en el fichero de valores del sp500
+		' primero miramos en el fichero de valores de cada mercado.
 		
-		nombre = buscartrade(RTrim(txt_find.Text))
+		nombre = buscartrade(RTrim(txt_find.Text),combo_market.SelectedItem.ToString)
 		
 		If (nombre="-1") Then
 		
@@ -629,17 +636,18 @@ Partial Class MainForm
 		
 	End Sub
 	
-	Sub Bto_downloadClick(sender As Object, e As EventArgs)
+	Sub grabafile(market As String)
+	 	
+	 	' TODO : añadir control de errores a la descarga del fichero de stock
+	 	Dim fichero, valor As String
+	 	
+		fichero = System.String.Concat("data\target\",market,".csv")
 		
-		' TODO : añadir control de errores a la descarga del fichero de stock
-		Dim fichero, valor As String
+		
+		tul_text.Text= (System.String.Concat("Escribiendo fichero: ",fichero))
 		
 		
-		fichero = System.String.Concat("data\target\",combo_stock.SelectedItem, ".csv")
-		
-		tul_text.Text = System.String.Concat("Escribiendo fichero: ",fichero)
-		
-		valor = api()
+		valor = api(market)
 		
 		If valor <> "-1" Then
 		
@@ -649,18 +657,44 @@ Partial Class MainForm
 			
 		End Using
 		
-		tul_text.Text = System.String.Concat("Fichero Creado: ",fichero)
+		tul_text.Text = (System.String.Concat("Fichero Creado: ",fichero))
 		Else
 			MessageBox.Show("Time out. Try again after a few seconds","Download stock the Alpha Vantage",MessageBoxButtons.OK, _
                 MessageBoxIcon.Exclamation, _
                 MessageBoxDefaultButton.Button1)
 		
 		End If
+	 End Sub
+	
+	Sub Bto_downloadClick(sender As Object, e As EventArgs)
+		
+		' TODO : añadir control de errores a la descarga del fichero de stock
+		
+		grabafile(combo_stock.SelectedItem.ToString)
        
 		
 	End Sub
 	
+	
 	Sub Bto_marketClick(sender As Object, e As EventArgs)
+		
+		
+		Dim f As IO.StreamReader
+		Dim reg As String()
+		
+		txt_stock.Text = ""
+
+        f = IO.File.OpenText(System.String.Concat("data\",combo_market.SelectedItem.ToString,".csv"))
+        Do Until f.EndOfStream
+        	
+        	reg = f.ReadLine().Split(New Char() {";"c})
+        	If (reg(0)<>"Ticker") Then
+        		txt_stock.Text=Concat(txt_stock.Text,reg(0),vbCrLf)
+        		grabafile(reg(0))
+        	End If
+        Loop
+        f.Close()
+       
 		
 		' TODO : programar la descarga en ficheros csv para su análisis posterior. Descarga todos los valores del market elegido
 		
